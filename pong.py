@@ -2,13 +2,15 @@ import pygame
 from config import *
 import config
 from menu import *
+from math import sin, cos, pi
+from random import randint
 
 
 pygame.init()
 
 
 class Board:
-    def __init__(self, width, height, speed, isLeft=True, ai=True, level='easy', color=(255, 255, 255)):
+    def __init__(self, width, height, speed, isLeft=True, ai=False, level='easy', color=(255, 255, 255)):
         self.width = width
         self.height = height
         self.speed = speed
@@ -23,6 +25,12 @@ class Board:
             top,
             width,
             height
+        )
+        self.inner_rect = pygame.rect.Rect(
+            left,
+            top + height // 4,
+            width,
+            height // 2
         )
         self.moveDown = False
         self.moveUp = False
@@ -45,11 +53,12 @@ class Board:
             self.rect.bottom = SCREEN_HEIGHT
         
     def _move_to(self, y_dest=SCREEN_HEIGHT >> 1):
-        x = self.rect.centerx
-        if self.rect.collidepoint(x, y_dest):
+        self.inner_rect.center = self.rect.center
+        x = self.inner_rect.centerx
+        if self.inner_rect.collidepoint(x, y_dest):
             self.moveDown = self.moveUp = False
             return
-        if self.rect.y < y_dest:
+        if self.inner_rect.y < y_dest:
             self.moveDown = True
             self.moveUp = False
         else:
@@ -129,10 +138,26 @@ class Ball:
         left = (SCREEN_WIDTH >> 1) - radius
         top = (SCREEN_HEIGHT >> 1) - radius 
         self.rect = pygame.rect.Rect(left, top, 2 * radius, 2 * radius)
-        self.speedx = speed
-        self.speedy = speed
+        r = randint(0, 300) / 100
+        self.speedx = speed * cos(r)
+        self.speedy = speed * sin(r)
+
+        self.ticks = 0
+        self.increase_speed_ticks = 1
+        self.increase_delta_speed = .1
 
     def update(self, left_board, right_board):
+        if self.ticks >= self.increase_speed_ticks:
+            if self.speedx > 0:
+                self.speedx += self.increase_delta_speed
+            else:
+                self.speedx -= self.increase_delta_speed
+            if self.speedy > 0:
+                self.speedy += self.increase_delta_speed
+            else:
+                self.speedy -= self.increase_delta_speed
+            self.ticks = 0
+
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         if self.rect.top < 0:
@@ -145,11 +170,15 @@ class Ball:
         if left_board.rect.colliderect(self.rect):
             self.rect.left = left_board.rect.right
             self.speedx = Ball._update_speed(self.speedx)
-            collide_sound.play()
+            self.ticks += 1
+            if config.PLAY_SOUND:
+                collide_sound.play()
         if right_board.rect.colliderect(self.rect):
             self.rect.right = right_board.rect.left
             self.speedx = Ball._update_speed(self.speedx)
-            collide_sound.play()
+            self.ticks += 1
+            if config.PLAY_SOUND:
+                collide_sound.play()
 
         if self.rect.left < 0: return 1
         if self.rect.right > SCREEN_WIDTH: return -1
@@ -165,21 +194,33 @@ class Ball:
 
 class App:
     def __init__(self, max_points=10, level=level, logic=logic):
-        self.leftBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, level='ultimate', color=BOARD_COLOR)
-        self.rightBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, False, True, level, BOARD_COLOR)
+        self.leftBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, level=config.level, ai=False, color=BOARD_COLOR)
+        self.rightBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, False, ai=True, level=config.level, color=BOARD_COLOR)
         self.ball = Ball(BALL_RADIUS, BALL_SPEED, BALL_COLOR, logic)
         self.run = True
         self.max_points = max_points
         self.leftPoints = 0
         self.rightPoints = 0
-    
+
+        self.last_ai = config.USE_AI
+
+        self.font = pygame.font.SysFont('Futura', 60)
+
+        
     def new_round(self):
-        self.leftBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, level='ultimate', color=BOARD_COLOR)
-        self.rightBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, False, True, level, BOARD_COLOR)
+        self.leftBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, level=config.level, color=BOARD_COLOR)
+        self.rightBoard = Board(BOARD_WIDTH, BOARD_HEIGHT, BOARD_SPEED, False, True, config.level, BOARD_COLOR)
         self.ball = Ball(BALL_RADIUS, BALL_SPEED, BALL_COLOR, logic)
 
     def update(self):
+        if not config.USE_AI and self.last_ai:
+            self.leftBoard.ai = False
+            self.leftBoard.moveDown = False
+            self.leftBoard.moveUp = False
+        self.last_ai = config.USE_AI
+        
         if not self.run: return
+        
         self.leftBoard.update(self.ball)
         self.rightBoard.update(self.ball)
         result = self.ball.update(self.leftBoard, self.rightBoard)
@@ -189,7 +230,13 @@ class App:
         elif result == -1:
             self.leftPoints += 1
             self.new_round()
-                
+        if self.leftPoints == config.MAX_POINTS:
+            config.round_finished = True
+            config.win = True
+        elif self.rightPoints == config.MAX_POINTS:
+            config.round_finished = True
+            config.win = False
+
 
     def draw(self):
         screen.fill(BG_COLOR)
@@ -204,24 +251,42 @@ class App:
         self.leftBoard.draw()
         self.rightBoard.draw()
         self.ball.draw()
+        if config.round_finished:
+            text = 'You won!'
+            color = GREEN
+            if not config.win:
+                text = 'You lost!'
+                color = RED
+            text = self.font.render(text, True, color, BLACK)
+            screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, 50))
 
-mainMenu = MainMenu(
+config.mainMenu = MainMenu(
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     topmargin=150,
     margin=50
 )
 
+config.settingsMenu = CommonSettingsMenu(
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+)
+
+config.menu = config.mainMenu
+
 while not config.game_over:
     clock.tick(FPS)
     if config.new_game:
         app = App()
         config.new_game = False
+        config.round_finished = False
+        config.win = False
     if config.pause:
-        mainMenu.update()
-        mainMenu.draw(screen)
+        config.menu.update()
+        config.menu.draw(screen)
     else:
-        app.update()
+        if not config.round_finished:
+            app.update()
         app.draw()
     
     for event in pygame.event.get():
@@ -234,7 +299,7 @@ while not config.game_over:
                 app.leftBoard.moveUp = True
             if event.key == pygame.K_DOWN:
                 app.leftBoard.moveDown = True
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE and config.USE_AI:
                 app.leftBoard.ai = not app.leftBoard.ai
 
             if event.key == pygame.K_ESCAPE:

@@ -10,6 +10,8 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0, 200, 0)
 GRAY  = (20, 20, 20)
+BLUE  = (0, 0, 200)
+RED   = (200, 0, 0)
 
 # SCREEN CONFIGURATIONS
 SCREEN_WIDTH    = 1000
@@ -25,8 +27,12 @@ FPS = 60
 game_over = False
 pause = False
 new_game = True
+round_finished = False
+win = False
+MAX_POINTS = 10
 
 # GAME MODE
+leftLevel = 'normal'
 level = 'ultimate'   # the game difficulty
 logic = 'simple' # for ball
 
@@ -61,6 +67,7 @@ FONT_COLOR  = WHITE
 font = pygame.font.SysFont('Futura', size=FONT_SIZE)
 
 # SOUNDS
+PLAY_SOUND  = True
 collide_sound = pygame.mixer.Sound('audio/ball.ogg')
 collide_sound.set_volume(1)
 
@@ -75,3 +82,9 @@ BUTTON_BORDER       = 3
 
 # MENU
 MENU_BG_COLOR       = GRAY
+menu                = None
+mainMenu            = None
+settingsMenu        = None
+
+# AI
+USE_AI              = True

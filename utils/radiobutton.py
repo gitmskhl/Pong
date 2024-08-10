@@ -3,7 +3,7 @@ import pygame
 pygame.init()
 
 default_rbutton_setup = {
-    'font': pygame.font.SysFont('Futura', 40),
+    'font': pygame.font.SysFont('Futura', 30),
     'square_width': 20,
     'square_height': 20,
     'line_width': 3,
