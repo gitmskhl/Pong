@@ -1,6 +1,7 @@
 import pygame
 from config import *
 import config
+import menu as mn
 from menu import *
 from math import sin, cos, pi
 from random import randint
@@ -294,7 +295,7 @@ while not config.game_over:
         if event.type == pygame.QUIT:
             config.game_over = True
         
-        if event.type == pygame.KEYDOWN:
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 app.leftBoard.moveUp = True
             if event.key == pygame.K_DOWN:
@@ -305,11 +306,18 @@ while not config.game_over:
             if event.key == pygame.K_ESCAPE:
                 config.pause = not pause
 
-        if event.type == pygame.KEYUP:
+        elif event.type == pygame.KEYUP:
             if event.key == pygame.K_UP:
                 app.leftBoard.moveUp = False
             if event.key == pygame.K_DOWN:
                 app.leftBoard.moveDown = False
+
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mn.MOUSE_CLICKED = True
+        
+        elif event.type == pygame.MOUSEBUTTONUP:
+            mn.MOUSE_CLICKED = False
+
 
     pygame.display.update()
     

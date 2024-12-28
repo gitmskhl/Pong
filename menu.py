@@ -5,6 +5,7 @@ from utils.radiobutton import RadioButton
 
 pygame.init()
 
+MOUSE_CLICKED = False
 menu_over = pygame.mixer.Sound('audio/menu_select.mp3')
 
 def load_image(path, scale=1):
@@ -38,7 +39,8 @@ class Button:
         else:
             self.mouse_over = False            
 
-        if pygame.mouse.get_pressed()[0] == 1:
+        # if pygame.mouse.get_pressed()[0] == 1:
+        if MOUSE_CLICKED:
             if self.mouse_over:
                 self.clicked = True
                 return True

@@ -5,6 +5,7 @@ pygame.mixer.init()
 
 pygame.init()
 
+
 # COLORS
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -17,6 +18,7 @@ RED   = (200, 0, 0)
 SCREEN_WIDTH    = 1000
 SCREEN_HEIGHT   = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption('Pong | Musa Kh (mskhl)')
 BG_COLOR = BLACK
 
 # CLOCK CONFIGURATIONS
